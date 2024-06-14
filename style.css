@@ -1,0 +1,235 @@
+.webgl {
+  position: fixed;
+  top: 0;
+  left: 0;
+  outline: none;
+  z-index: -1;
+}
+
+/* font credit - 117studio - Type Foundry and Graphic Design Studio
+source - https://177studio.com/
+non-comercial, personal use */
+@font-face {
+  font-family: "abnes";
+  src: url("./static/fonts/abnes.ttf");
+}
+
+body {
+  display: grid;
+  grid-template-columns: 3;
+  grid-template-rows: 3;
+  height: 100vh;
+  margin: 0;
+  flex-direction: column;
+  justify-content: center;
+  align-content: center;
+  align-items: flex-start;
+  justify-items: center;
+  animation: fadeInAnimation ease 3s;
+  animation-iteration-count: 1;
+  animation-fill-mode: forwards;
+}
+
+@keyframes fadeInAnimation {
+  0% {
+    opacity: 0;
+  }
+  100% {
+    opacity: 1;
+  }
+}
+
+.titles {
+  grid-row: 1;
+  grid-column: 2;
+  font-family: "abnes";
+  letter-spacing: 0.1px;
+  margin-bottom: 50px;
+  font-size: 50px;
+}
+
+.board_grid {
+  grid-row-start: 2;
+  display: grid;
+  height: 550px;
+  width: 630px;
+  grid-template-rows: repeat(6, 1fr);
+  grid-template-columns: repeat(7, 1fr);
+  border: solid 2px #00cccc;
+  box-shadow: 1px 1px rgb(0, 217, 255), 1px 0 0.4em #0fa;
+  align-items: center;
+  justify-items: center;
+}
+
+.cell {
+  overflow: hidden;
+  align-items: center;
+  display: flex;
+  box-shadow: 1px 1px rgb(0, 217, 255), 1px 0 0.4em #0fa;
+  border-radius: 50%;
+  height: 70px;
+  width: 70px;
+  justify-content: center;
+  text-align: justify;
+  cursor: cell;
+}
+
+.player_1 {
+  padding: 10px;
+  margin: 10px;
+  font-family: "abnes";
+  grid-row: 2;
+  grid-column: 1;
+  color: white;
+}
+
+.player_2 {
+  padding: 10px;
+  margin: 10px;
+  font-family: "abnes";
+  grid-row: 2;
+  grid-column: 3;
+  color: white;
+}
+.player1_token {
+  grid-row: 2;
+  grid-column: 1;
+  box-shadow: 1px 1px rgb(0, 217, 255), 1px 0 0.4em #0fa;
+  border-radius: 50%;
+  height: 70px;
+  width: 70px;
+  margin-top: 50px;
+  cursor: cell;
+}
+.player2_token {
+  grid-row: 2;
+  grid-column: 3;
+  border-radius: 50%;
+  height: 70px;
+  width: 70px;
+  margin-top: 50px;
+  cursor: cell;
+  box-shadow: 1px 1px rgb(0, 217, 255), 1px 0 0.4em #0fa;
+}
+
+.start_reset {
+  grid-row: 3;
+  grid-column: 2;
+  margin-top: 50px;
+  font-family: "abnes";
+  padding: 15px;
+  border-radius: 5%;
+  cursor: cell;
+  color: #f2f8f4;
+  letter-spacing: 10px;
+  font-size: 24px;
+  overflow: hidden;
+  transition: 0.2s;
+  background: linear-gradient(360deg, transparent, #67ccae);
+  box-shadow: 1px 1px rgb(0, 217, 255), 1px 0 0.4em #0fa;
+}
+
+.rounded {
+  border-radius: 7px 7px 7px 7px;
+}
+
+.neonText {
+  color: #fff;
+  text-shadow: 0 0 7px #fff, 0 0 10px #fff, 0 0 21px #fff, 0 0 42px #0fa,
+    0 0 82px #0fa, 0 0 92px #0fa, 0 0 102px #0fa, 0 0 151px #0fa;
+}
+
+.win_lose_draw {
+  font-family: "abnes";
+  font-size: 50px;
+  letter-spacing: 10px;
+  display: flex;
+  flex-wrap: wrap;
+  color: white;
+  position: absolute;
+  border-radius: 2%;
+  text-align: center;
+  left: 50%px;
+  top: 40%;
+  background: linear-gradient(360deg, transparent, #67ccae);
+  box-shadow: 1px 1px rgb(0, 217, 255), 1px 0 0.4em #0fa;
+}
+
+.music {
+  grid-row: 1;
+  grid-column: 2;
+  margin-top: -7px;
+  margin-left: 650px;
+  font-family: "abnes";
+  padding: 10px;
+  border-radius: 50%;
+  cursor: cell;
+  color: #f2f8f4;
+  overflow: hidden;
+  background: linear-gradient(360deg, transparent, #67ccae);
+  box-shadow: 1px 1px rgb(0, 217, 255), 1px 0 0.4em #0fa;
+}
+
+img {
+  height: 30px;
+  width: 30px;
+}
+
+.yellow {
+  background: linear-gradient(360deg, transparent, #ffd900 85%);
+}
+
+.red {
+  background: linear-gradient(360deg, transparent, #ff0000 95%);
+}
+
+.endGameMsgDisable {
+  display: none;
+}
+
+.winningHighlight {
+  border: solid 5px #5ac0ff;
+  box-shadow: 1px 1px rgb(0, 217, 255), 5px 0 0.8em rgb(0, 140, 255);
+}
+
+@media only screen and (min-width: 375px) and (max-width: 832px) {
+  .cell {
+    height: 40px;
+    width: 40px;
+  }
+
+  .player_1 {
+    display: none;
+  }
+
+  .player_2 {
+    display: none;
+  }
+  .player1_token {
+    display: none;
+  }
+  .player2_token {
+    display: none;
+  }
+  .music {
+    display: none;
+  }
+  .board_grid {
+    grid-row: 2;
+    grid-column: 2;
+    display: grid;
+    height: 300px;
+    width: 400px;
+  }
+  .titles {
+    margin-bottom: 35px;
+    font-size: 25px;
+  }
+  .start_reset {
+    letter-spacing: 5px;
+    margin-top: 40px;
+    font-size: 15px;
+    font-family: "abnes";
+    padding: 5px;
+  }
+}

@@ -1,0 +1,94 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Connect 4!</title>
+    <link rel="stylesheet" href="style.css">    
+</head>
+<body>
+  <canvas class="webgl"></canvas>
+
+  <div class="win_lose_draw endGameMsgDisable neonText" >Player 1 WINS! <br> Play again?</br> </div>
+
+  <div class="titles neonText">CONNECT 4</div>
+  
+  <div class="board_grid rounded">
+
+    <!-- row 1 (top) -->
+    <div class="cell row0 column0"></div>
+    <div class="cell row0 column1"></div>
+    <div class="cell row0 column2"></div>
+    <div class="cell row0 column3"></div>
+    <div class="cell row0 column4"></div>
+    <div class="cell row0 column5"></div>
+    <div class="cell row0 column6"></div>
+    
+
+    <!-- row 2 -->
+    <div class="cell row1 column0"></div>
+    <div class="cell row1 column1"></div>
+    <div class="cell row1 column2"></div>
+    <div class="cell row1 column3"></div>
+    <div class="cell row1 column4"></div>
+    <div class="cell row1 column5"></div>
+    <div class="cell row1 column6"></div>
+    
+    <!-- row 3 -->
+    <div class="cell row2 column0"></div>
+    <div class="cell row2 column1"></div>
+    <div class="cell row2 column2"></div>
+    <div class="cell row2 column3"></div>
+    <div class="cell row2 column4"></div>
+    <div class="cell row2 column5"></div>
+    <div class="cell row2 column6"></div>
+    
+    <!-- row 4 -->
+    <div class="cell row3 column0"></div>
+    <div class="cell row3 column1"></div>
+    <div class="cell row3 column2"></div>
+    <div class="cell row3 column3"></div>
+    <div class="cell row3 column4"></div>
+    <div class="cell row3 column5"></div>
+    <div class="cell row3 column6"></div>
+
+    <!-- row 5 -->
+    <div class="cell row4 column0"></div>
+    <div class="cell row4 column1"></div>
+    <div class="cell row4 column2"></div>
+    <div class="cell row4 column3"></div>
+    <div class="cell row4 column4"></div>
+    <div class="cell row4 column5"></div>
+    <div class="cell row4 column6"></div>
+
+    <!-- row 6 (bottom) -->
+    <div class="cell row5 column0"></div>
+    <div class="cell row5 column1"></div>
+    <div class="cell row5 column2"></div>
+    <div class="cell row5 column3"></div>
+    <div class="cell row5 column4"></div>
+    <div class="cell row5 column5"></div>
+    <div class="cell row5 column6"></div>
+</div>
+
+<div class="player_1 neonText">Player 1</div>
+<div class="player1_token neonText red"></div>
+
+<div class="player_2 neonText">Player 2</div>
+<div class="player2_token neonText"></div>
+
+  
+<button class="start_reset neonText">Start Game</button>
+
+<button class="music">
+  <img src="/static/images/sound.png" alt="Music Icon" />
+</button>
+
+<script type="module" src="/static/main.js"></script>
+<script src="https://cdn.socket.io/4.7.2/socket.io.min.js"></script>
+<script>
+  var socket = io();
+</script>
+</body>
+
+</html>
