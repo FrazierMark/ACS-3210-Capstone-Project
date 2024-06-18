@@ -11,7 +11,7 @@ source - https://177studio.com/
 non-comercial, personal use */
 @font-face {
   font-family: "abnes";
-  src: url("./static/fonts/abnes.ttf");
+  src: url("./static/assets/fonts/abnes.ttf");
 }
 
 body {

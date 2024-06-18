@@ -12,6 +12,8 @@ async function createMainServer() {
 	const server = http.createServer(app);
 	const io = new Server(server);
 
+	const rooms = {};
+
 	// Helper to emulate __dirname in ES modules
 	const __filename = fileURLToPath(import.meta.url);
 	const __dirname = path.dirname(__filename);
@@ -21,10 +23,17 @@ async function createMainServer() {
 	});
 
 	io.on('connection', (socket) => {
-		console.log(`A user connected ${socket.id}`);
+		console.log(`A user connected: Socket ID => ${socket.id}`);
 
 		socket.on('disconnect', () => {
-			console.log(`user disconnected ${socket.id}`);
+			console.log(`A User disconnected: Socket ID => ${socket.id}`);
+		});
+
+		socket.on('create new game', () => {
+			const roomId = createRoomId(6);
+			rooms[roomId] = {};
+			socket.join(roomId);
+			socket.emit('new game', roomId);
 		});
 	});
 
@@ -48,3 +57,14 @@ async function createMainServer() {
 }
 
 createMainServer();
+
+function createRoomId(length) {
+	var result = '';
+	var characters =
+		'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789';
+	var charactersLength = characters.length;
+	for (var i = 0; i < length; i++) {
+		result += characters.charAt(Math.floor(Math.random() * charactersLength));
+	}
+	return result;
+}

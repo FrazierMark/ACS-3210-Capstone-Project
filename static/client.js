@@ -1,22 +1,25 @@
 import * as THREE from 'three';
 import { OrbitControls } from 'three/examples/jsm/controls/OrbitControls.js';
 import * as dat from 'lil-gui';
-import vShader from './shaders/vShader.glsl';
-import fShader from './shaders/fShader.glsl';
-import soundTrack from './audio/synth1.mp3';
-import redTrack from './audio/redTrack.mp3';
-import yellowTrack from './audio/yellowTrack.mp3';
-import winTone from './audio/winTone.mp3';
-import drawTone from './audio/drawTone.mp3';
+import vShader from './assets/shaders/vShader.glsl';
+import fShader from './assets/shaders/fShader.glsl';
+import soundTrack from './assets/audio/synth1.mp3';
+import redTrack from './assets/audio/redTrack.mp3';
+import yellowTrack from './assets/audio/yellowTrack.mp3';
+import winTone from './assets/audio/winTone.mp3';
+import drawTone from './assets/audio/drawTone.mp3';
+
+const socket = io();
+let roomId = null;
 
 // Calls init() on load
-document.addEventListener(
-	'DOMContentLoaded',
-	function () {
-		init();
-	},
-	false
-);
+// document.addEventListener(
+// 	'DOMContentLoaded',
+// 	function () {
+// 		init();
+// 	},
+// 	false
+// );
 
 /*----- DOM Elements -----*/
 const player1_TurnToken = document.querySelector('.player1_token');
@@ -25,6 +28,7 @@ const player2_TurnToken = document.querySelector('.player2_token');
 const musicBtn = document.querySelector('.music');
 const startResetBtn = document.querySelector('.start_reset');
 const winLoseDrawMsg = document.querySelector('.win_lose_draw');
+const joinRoomBtn = document.querySelector('.join_room');
 
 const column0 = document.getElementsByClassName('column0');
 const column1 = document.getElementsByClassName('column1');
@@ -84,8 +88,20 @@ let allColumns = [
 ];
 
 /*-----Event Listeners-----*/
-startResetBtn.addEventListener('click', init);
+// startResetBtn.addEventListener('click', init);
+startResetBtn.addEventListener('click', socket.emit('create new game'));
 musicBtn.addEventListener('click', playMusic);
+joinRoomBtn.addEventListener('click', joinRoom);
+
+socket.on('new game', (data) => {
+	roomId = data.roomId;
+	init();
+});
+
+const joinRoom = () => {
+	roomId = document.getElementById('roomId').value;
+	socket.emit('join room', { roomId });
+}
 
 // Adds eventListener on each cell
 for (const column of allColumns) {
@@ -104,6 +120,8 @@ function init() {
 	for (let i = 0; i < 6; i++) {
 		gameBoard.push(new Array(7).fill(0));
 	}
+
+	
 }
 
 //aka handleClick, fires when a column/cell is clicked

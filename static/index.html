@@ -79,12 +79,14 @@
 
   
 <button class="start_reset neonText">Start Game</button>
+<input class="roomId" placeholder="Enter Code" type="text" name="" id="roomId" />
+<button class="join_room"> Join Game</button>
 
 <button class="music">
-  <img src="/static/images/sound.png" alt="Music Icon" />
+  <img src="/static/assets/images/sound.png" alt="Music Icon" />
 </button>
 
-<script type="module" src="/static/main.js"></script>
+<script type="module" src="/static/client.js"></script>
 <script src="https://cdn.socket.io/4.7.2/socket.io.min.js"></script>
 <script>
   var socket = io();
