@@ -9,17 +9,23 @@ import yellowTrack from './assets/audio/yellowTrack.mp3';
 import winTone from './assets/audio/winTone.mp3';
 import drawTone from './assets/audio/drawTone.mp3';
 
-const socket = io();
+const socket = io.connect();
+
 let roomId = null;
 
+socket.emit('clear game board');
+socket.on('clear board', () => {
+	clearGameBoard();
+});
+
 // Calls init() on load
-// document.addEventListener(
-// 	'DOMContentLoaded',
-// 	function () {
-// 		init();
-// 	},
-// 	false
-// );
+document.addEventListener(
+	'DOMContentLoaded',
+	() => {
+		socket.emit('create new game');
+	},
+	false
+);
 
 /*----- DOM Elements -----*/
 const player1_TurnToken = document.querySelector('.player1_token');
@@ -89,16 +95,19 @@ let allColumns = [
 
 /*-----Event Listeners-----*/
 // startResetBtn.addEventListener('click', init);
-startResetBtn.addEventListener('click', socket.emit('create new game'));
+startResetBtn.addEventListener('click', () => {
+	socket.emit('create new game');
+});
 musicBtn.addEventListener('click', playMusic);
 joinRoomBtn.addEventListener('click', joinRoom);
 
-socket.on('new game', (data) => {
-	roomId = data.roomId;
+socket.on('new game', () => {
+	//roomId = data.roomId;
+	console.log('New game created on CLIENT!!)');
 	init();
 });
 
-const joinRoom = () => {
+function joinRoom() {
 	roomId = document.getElementById('roomId').value;
 	socket.emit('join room', { roomId });
 }
@@ -106,32 +115,48 @@ const joinRoom = () => {
 // Adds eventListener on each cell
 for (const column of allColumns) {
 	for (const cell of column) {
-		cell.addEventListener('click', dropToken);
+		cell.addEventListener('click', (e) => {
+			// Gets specific clicked cell (an array of [Row, Column])
+			const cellIdx = getCellIdx(e);
+			// Gets Column index from that array
+			const columnIdxClicked = cellIdx[1];
+			// Returns an Index of lowest available slot if any
+			let indexToUpdate = getAvailableSlot(columnIdxClicked);
+
+			socket.emit('drop token', {
+				cellIdx,
+				columnIdxClicked,
+				indexToUpdate,
+			});
+		});
 	}
 }
+
+socket.on('token dropped', (data) => {
+	const { cellIdx, columnIdxClicked, indexToUpdate } = data;
+	dropToken(cellIdx, columnIdxClicked, indexToUpdate);
+	console.log('Token dropped on CLIENT!!)');
+});
 
 // Sets initial state variables
 function init() {
 	startResetBtn.innerText = 'Restart Game?';
-	// If another game just ended, this clears the board
 	clearGameBoard();
 
 	// Initialize 2D matrix of (0)s
 	for (let i = 0; i < 6; i++) {
 		gameBoard.push(new Array(7).fill(0));
 	}
-
-	
 }
 
 //aka handleClick, fires when a column/cell is clicked
-function dropToken(e) {
+function dropToken(cellIdx, columnIdxClicked, indexToUpdate) {
 	// Gets specific clicked cell (an array of [Row, Column])
-	const cellIdx = getCellIdx(e);
-	// Gets Column index from that array
-	const columnIdxClicked = cellIdx[1];
-	// Returns an Index of lowest available slot if any
-	let indexToUpdate = getAvailableSlot(columnIdxClicked);
+	// const cellIdx = getCellIdx(e);
+	// // Gets Column index from that array
+	// const columnIdxClicked = cellIdx[1];
+	// // Returns an Index of lowest available slot if any
+	// let indexToUpdate = getAvailableSlot(columnIdxClicked);
 	// checkPlayerTurn() returns either 1 or -1, indicating player's move
 	// We record the player's move to gameBoard at the lowest available slot
 	gameBoard[indexToUpdate[0]][indexToUpdate[1]] = checkPlayerTurn();
@@ -144,6 +169,7 @@ function render() {
 	//Colors each cell based on player's move
 	updateDomGameBoard();
 	updateTurn();
+
 	//Renders a display message if there's a Winner or a Draw
 	winLoseDrawMsg.innerText = displayEndMessage(checkWinner(), checkDraw());
 	if (winner == true || draw == true) {
@@ -154,7 +180,7 @@ function render() {
 }
 
 function updateDomGameBoard() {
-	// We construct the classNames of approprite Idx from the lastColumnClicked
+	// We construct the classNames of appropriate Idx from the lastColumnClicked
 	let classNames = [
 		`row${lastColumnClicked[0]}`,
 		`column${lastColumnClicked[1]}`,
@@ -387,7 +413,7 @@ function getCellIdx(cell) {
 	return [rowIdx, colIdx];
 }
 
-// Simply returns 1 (red) if it's player 1's turn or 2 (yellow) if player 2's
+// Simply returns 1 (red) if it's player 1's turn or -1 (yellow) if player 2's
 function checkPlayerTurn() {
 	if (player1_Turn == true) {
 		return 1; // red
@@ -473,262 +499,3 @@ function playSoundFX() {
 			});
 	}
 }
-
-/*
- * WebGL / ThreeJS - Background Animation
- */
-
-// Some of this is derived from Bruno Simon's 3JS Journey,
-// Source: https://threejs-journey.com/
-
-// Canvas
-const canvas = document.querySelector('canvas.webgl');
-
-// Debugging GUI
-const gui = new dat.GUI({ width: 200 });
-
-// Scene
-const scene = new THREE.Scene();
-
-// Initial Particle parameter data on page load
-const parameters = {
-	count: 10500,
-	size: 0.022,
-	radius: 5,
-	forks: 13,
-	curve: 1,
-	randomness: 1.2,
-	randomPower: 8,
-	innerColor: '#00ffb3',
-	outerColor: '#f1f514',
-};
-
-// Initialize variables
-let geometry = null;
-let material = null;
-let particles = null;
-
-// Particle generation function
-const generateParticleFormation = () => {
-	// When GUI is adjusted, particle generation is called again so we need to remove old particle scene
-	if (particles !== null) {
-		geometry.dispose();
-		material.dispose();
-		scene.remove(particles);
-	}
-
-	// New geometry object created from BufferGeometry class
-	// Will eventually contain the vertices for our particles
-	geometry = new THREE.BufferGeometry();
-
-	// Initializing Arrays to hold attributes for our geometry (* 3 cause of x, y, z values)
-	const positions = new Float32Array(parameters.count * 3);
-	const colors = new Float32Array(parameters.count * 3);
-	const randomness = new Float32Array(parameters.count * 3);
-	const innerColor = new THREE.Color(parameters.innerColor);
-	const outerColor = new THREE.Color(parameters.outerColor);
-	const scales = new Float32Array(parameters.count * 1);
-
-	// For each particle..
-	for (let i = 0; i < parameters.count; i++) {
-		//Access every 3 elements in array
-		const i3 = i * 3;
-
-		// Particle position calculations
-		const radius = Math.random() * parameters.radius;
-		// every 3rd value, [0, .33, .66 | 0, .33, .66 | 0, .33, .66]...
-		// Math.PI * 2 == 1 full circle
-		const forkAngle = ((i % parameters.forks) / parameters.forks) * Math.PI * 2;
-		// further the particle is from center will increase the curveAngle
-		const curveAngle = radius * parameters.curve;
-
-		// create random (x,y,z) variables to use in our GUI tweaking
-		// random number = (Math.pow() takes 2 args, base ^ exponent) * (either a -1 or a positive 1) * (randomness)
-		const randomX =
-			Math.pow(Math.random(), parameters.randomPower) *
-			(Math.random() < 0.5 ? 1 : -1) *
-			parameters.randomness *
-			radius;
-		const randomY =
-			Math.pow(Math.random(), parameters.randomPower) *
-			(Math.random() < 0.5 ? 1 : -1) *
-			parameters.randomness *
-			radius;
-		const randomZ =
-			Math.pow(Math.random(), parameters.randomPower) *
-			(Math.random() < 0.5 ? 1 : -1) *
-			parameters.randomness *
-			radius;
-
-		//
-		positions[i3] = Math.cos(forkAngle) * radius * -curveAngle; // position on x
-		positions[i3 + 1] = Math.sin(forkAngle) * 2; // position on z
-		positions[i3 + 2] = Math.sin(forkAngle) * radius * curveAngle; // position on z
-
-		//
-		randomness[i3] = randomX;
-		randomness[i3 + 1] = randomY;
-		randomness[i3 + 2] = randomZ;
-
-		// Color
-		const mixedInnerOuter = innerColor.clone();
-		// lerp() gets the delta value from innerColor to outerColor (between 0 and 1)
-		// it then uses that delta to interpolate and mix the inner and outer color
-		mixedInnerOuter.lerp(outerColor, radius / parameters.radius);
-
-		colors[i3] = mixedInnerOuter.r;
-		colors[i3 + 1] = mixedInnerOuter.g;
-		colors[i3 + 2] = mixedInnerOuter.b;
-
-		// Scale
-		scales[i] = Math.random();
-	}
-
-	//Setting geometry attribute w/ BufferAttribute class which stores data (vertex, indices, colors, UVs) associated with bufferGeometry
-	// We pass in an array and an integer to set the attribute
-	geometry.setAttribute('position', new THREE.BufferAttribute(positions, 3));
-	geometry.setAttribute('color', new THREE.BufferAttribute(colors, 3));
-	geometry.setAttribute('aScale', new THREE.BufferAttribute(scales, 1));
-	geometry.setAttribute(
-		'aRandomness',
-		new THREE.BufferAttribute(randomness, 3)
-	);
-
-	// Shader Material - custome program written in GLSL that runs on the GPU
-	// Allows us to combine many objects into a single BufferGeometry to improve performance
-	material = new THREE.ShaderMaterial({
-		depthWrite: false,
-		blending: THREE.AdditiveBlending,
-		vertexColors: true,
-		uniforms: {
-			uTime: { value: 0 },
-			uSize: { value: 35 * renderer.getPixelRatio() },
-		},
-		vertexShader: vShader,
-		fragmentShader: fShader,
-	});
-
-	// Instantiating our particles!
-	particles = new THREE.Points(geometry, material);
-	// Add particles to scene!
-	scene.add(particles);
-};
-
-// Get Aspect Window ratio
-const windowSize = {
-	width: window.innerWidth,
-	height: window.innerHeight,
-};
-
-// Allow window and scene objects to resize on window adjustment
-window.addEventListener('resize', () => {
-	// Update windowSize
-	windowSize.width = window.innerWidth;
-	windowSize.height = window.innerHeight;
-
-	// Update camera aspect-ratio based on window size
-	camera.aspect = windowSize.width / windowSize.height;
-	camera.updateProjectionMatrix();
-
-	// Update renderer
-	renderer.setSize(windowSize.width, windowSize.height);
-	renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
-});
-
-// Instantiating Camera and camera position
-//4 Args for PerspectiveCamera: (fov, Aspect Ratio, near, far) — for camera frustum (the region of space in the modeled world that may appear on the screen)
-const camera = new THREE.PerspectiveCamera(
-	75,
-	windowSize.width / windowSize.height,
-	0.1,
-	100
-);
-camera.position.x = 0;
-camera.position.y = 0;
-camera.position.z = 0.897;
-scene.add(camera);
-
-// Camera controls
-const controls = new OrbitControls(camera, canvas);
-controls.enableDamping = true;
-
-// Tweaking parameters in GUI
-const particleParameters = gui.addFolder('Particle Parameters');
-particleParameters.close();
-particleParameters
-	.add(parameters, 'count')
-	.min(100)
-	.max(1000000)
-	.step(100)
-	.onFinishChange(generateParticleFormation);
-particleParameters
-	.add(parameters, 'radius')
-	.min(0.01)
-	.max(22)
-	.step(0.01)
-	.onFinishChange(generateParticleFormation);
-particleParameters
-	.add(parameters, 'curve')
-	.min(-5)
-	.max(5)
-	.step(0.001)
-	.onFinishChange(generateParticleFormation);
-particleParameters
-	.add(parameters, 'forks')
-	.min(1)
-	.max(20)
-	.step(1.0)
-	.onFinishChange(generateParticleFormation);
-particleParameters
-	.add(parameters, 'randomness')
-	.min(0)
-	.max(10)
-	.step(0.001)
-	.onFinishChange(generateParticleFormation);
-particleParameters
-	.add(parameters, 'randomPower')
-	.min(1)
-	.max(10)
-	.step(0.001)
-	.onFinishChange(generateParticleFormation);
-particleParameters
-	.addColor(parameters, 'innerColor')
-	.onFinishChange(generateParticleFormation);
-particleParameters
-	.addColor(parameters, 'outerColor')
-	.onFinishChange(generateParticleFormation);
-const cameraFolder = gui.addFolder('Camera');
-cameraFolder.add(camera.position, 'x').min(0).max(15).step(0.001);
-cameraFolder.add(camera.position, 'y').min(0).max(15).step(0.001);
-cameraFolder.add(camera.position, 'z').min(0.01).max(15).step(0.001);
-cameraFolder.close();
-
-// Renderer (WebGl)
-const renderer = new THREE.WebGLRenderer({
-	canvas: canvas,
-});
-renderer.setSize(windowSize.width, windowSize.height);
-renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
-
-// Our main function
-generateParticleFormation();
-
-// Object for keeping track of time to use in frame updates
-const clock = new THREE.Clock();
-// Updates objects every frame...
-const frame = () => {
-	const elapsedTime = clock.getElapsedTime();
-
-	// Update material
-	material.uniforms.uTime.value = elapsedTime * 0.2; // slow it down a bit...
-
-	// Update controls
-	controls.update();
-
-	// Render
-	renderer.render(scene, camera);
-
-	// Call fram() again for the next frame
-	window.requestAnimationFrame(frame);
-};
-frame();

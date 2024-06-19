@@ -13,6 +13,7 @@ async function createMainServer() {
 	const io = new Server(server);
 
 	const rooms = {};
+	let gameBoard;
 
 	// Helper to emulate __dirname in ES modules
 	const __filename = fileURLToPath(import.meta.url);
@@ -32,9 +33,28 @@ async function createMainServer() {
 		socket.on('create new game', () => {
 			const roomId = createRoomId(6);
 			rooms[roomId] = {};
-			socket.join(roomId);
-			socket.emit('new game', roomId);
+			console.log('Created new game!!');
+			// socket.join(roomId);
+			io.emit('new game');
 		});
+
+		socket.on('clear game board', () => {
+			io.emit('clear board');
+		});
+
+		socket.on('join game', (data) => {
+			console.log("JOINED GAME")
+			if (rooms[data.roomId] != null) {
+				socket.join(data.roomId);
+				socket.to(data.roomId).emit('player connected', {});
+				io.emit('players connected');
+			}
+		});
+
+		socket.on('drop token', (data) => {
+			io.emit('token dropped', data);
+		})
+
 	});
 
 	const vite = await createViteServer({
