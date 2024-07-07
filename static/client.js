@@ -1,13 +1,14 @@
 import * as THREE from 'three';
 import { OrbitControls } from 'three/examples/jsm/controls/OrbitControls.js';
 import * as dat from 'lil-gui';
-import vShader from './assets/shaders/vShader.glsl';
-import fShader from './assets/shaders/fShader.glsl';
+import fragmentShader from './assets/shaders/fragmentShader.glsl';
+import vertexShader from './assets/shaders/vertexShader.glsl';
 import soundTrack from './assets/audio/synth1.mp3';
 import redTrack from './assets/audio/redTrack.mp3';
 import yellowTrack from './assets/audio/yellowTrack.mp3';
 import winTone from './assets/audio/winTone.mp3';
 import drawTone from './assets/audio/drawTone.mp3';
+import Background from 'three/examples/jsm/renderers/common/Background.js';
 
 const socket = io.connect();
 
@@ -93,7 +94,7 @@ startResetBtn.addEventListener('click', () => {
 	socket.emit('create new game');
 });
 musicBtn.addEventListener('click', playMusic);
-joinRoomBtn.addEventListener('click', joinRoom);
+// joinRoomBtn.addEventListener('click', joinRoom);
 
 socket.emit('clear game board');
 socket.on('clear board', () => {
@@ -495,133 +496,61 @@ function playSoundFX() {
 const canvas = document.querySelector('canvas.webgl');
 
 // Debugging GUI
-const gui = new dat.GUI({ width: 200 });
+const gui = new dat.GUI({ width: 250 });
+const colorFolder = gui.addFolder('Colors');
 
 // Scene
 const scene = new THREE.Scene();
 
-// Initial Particle parameter data on page load
-const parameters = {
-	count: 10500,
-	size: 0.022,
-	radius: 5,
-	forks: 13,
-	curve: 1,
-	randomness: 1.2,
-	randomPower: 8,
-	innerColor: '#00ffb3',
-	outerColor: '#f1f514',
+const colorParams = {
+	colorA: '#00ffbf',
+	colorB: '#000000',
 };
 
 // Initialize variables
-let geometry = null;
 let material = null;
-let particles = null;
 
-// Particle generation function
-const generateParticleFormation = () => {
-	// When GUI is adjusted, particle generation is called again so we need to remove old particle scene
-	if (particles !== null) {
-		geometry.dispose();
-		material.dispose();
-		scene.remove(particles);
-	}
+let colorA = new THREE.Color(colorParams.colorA);
+let colorB = new THREE.Color(colorParams.colorB);
 
-	// New geometry object created from BufferGeometry class
-	// Will eventually contain the vertices for our particles
-	geometry = new THREE.BufferGeometry();
-
-	// Initializing Arrays to hold attributes for our geometry (* 3 cause of x, y, z values)
-	const positions = new Float32Array(parameters.count * 3);
-	const colors = new Float32Array(parameters.count * 3);
-	const randomness = new Float32Array(parameters.count * 3);
-	const innerColor = new THREE.Color(parameters.innerColor);
-	const outerColor = new THREE.Color(parameters.outerColor);
-	const scales = new Float32Array(parameters.count * 1);
-
-	// For each particle..
-	for (let i = 0; i < parameters.count; i++) {
-		//Access every 3 elements in array
-		const i3 = i * 3;
-
-		// Particle position calculations
-		const radius = Math.random() * parameters.radius;
-		// every 3rd value, [0, .33, .66 | 0, .33, .66 | 0, .33, .66]...
-		// Math.PI * 2 == 1 full circle
-		const forkAngle = ((i % parameters.forks) / parameters.forks) * Math.PI * 2;
-		// further the particle is from center will increase the curveAngle
-		const curveAngle = radius * parameters.curve;
-
-		// create random (x,y,z) variables to use in our GUI tweaking
-		// random number = (Math.pow() takes 2 args, base ^ exponent) * (either a -1 or a positive 1) * (randomness)
-		const randomX =
-			Math.pow(Math.random(), parameters.randomPower) *
-			(Math.random() < 0.5 ? 1 : -1) *
-			parameters.randomness *
-			radius;
-		const randomY =
-			Math.pow(Math.random(), parameters.randomPower) *
-			(Math.random() < 0.5 ? 1 : -1) *
-			parameters.randomness *
-			radius;
-		const randomZ =
-			Math.pow(Math.random(), parameters.randomPower) *
-			(Math.random() < 0.5 ? 1 : -1) *
-			parameters.randomness *
-			radius;
-
-		//
-		positions[i3] = Math.cos(forkAngle) * radius * -curveAngle; // position on x
-		positions[i3 + 1] = Math.sin(forkAngle) * 2; // position on z
-		positions[i3 + 2] = Math.sin(forkAngle) * radius * curveAngle; // position on z
-
-		//
-		randomness[i3] = randomX;
-		randomness[i3 + 1] = randomY;
-		randomness[i3 + 2] = randomZ;
-
-		// Color
-		const mixedInnerOuter = innerColor.clone();
-		// lerp() gets the delta value from innerColor to outerColor (between 0 and 1)
-		// it then uses that delta to interpolate and mix the inner and outer color
-		mixedInnerOuter.lerp(outerColor, radius / parameters.radius);
-
-		colors[i3] = mixedInnerOuter.r;
-		colors[i3 + 1] = mixedInnerOuter.g;
-		colors[i3 + 2] = mixedInnerOuter.b;
-
-		// Scale
-		scales[i] = Math.random();
-	}
-
-	//Setting geometry attribute w/ BufferAttribute class which stores data (vertex, indices, colors, UVs) associated with bufferGeometry
-	// We pass in an array and an integer to set the attribute
-	geometry.setAttribute('position', new THREE.BufferAttribute(positions, 3));
-	geometry.setAttribute('color', new THREE.BufferAttribute(colors, 3));
-	geometry.setAttribute('aScale', new THREE.BufferAttribute(scales, 1));
-	geometry.setAttribute(
-		'aRandomness',
-		new THREE.BufferAttribute(randomness, 3)
-	);
-
-	// Shader Material - custome program written in GLSL that runs on the GPU
-	// Allows us to combine many objects into a single BufferGeometry to improve performance
-	material = new THREE.ShaderMaterial({
-		depthWrite: false,
-		blending: THREE.AdditiveBlending,
-		vertexColors: true,
-		uniforms: {
-			uTime: { value: 0 },
-			uSize: { value: 35 * renderer.getPixelRatio() },
-		},
-		vertexShader: vShader,
-		fragmentShader: fShader,
+colorFolder
+	.addColor({ colorA: colorA.getHexString() }, 'colorA')
+	.name('Color A')
+	.onChange((value) => {
+		colorA.set(value);
+		material.uniforms.u_colorA.value = colorA;
 	});
 
-	// Instantiating our particles!
-	particles = new THREE.Points(geometry, material);
-	// Add particles to scene!
-	scene.add(particles);
+colorFolder
+	.addColor({ colorB: colorB.getHexString() }, 'colorB')
+	.name('Color B')
+	.onChange((value) => {
+		colorB.set(value);
+		material.uniforms.u_colorB.value = colorB;
+	});
+
+colorFolder.open();
+
+// Particle generation function
+const generateBackgroundPlane = () => {
+	const planeGeometry = new THREE.PlaneGeometry(1, 1, 256, 256);
+
+	material = new THREE.ShaderMaterial({
+		uniforms: {
+			u_time: { value: 0 },
+			u_colorA: { value: colorA },
+			u_colorB: { value: colorB },
+			u_noiseStrength: { value: 0.15 },
+			u_noiseDensity: { value: 4.9 },
+		},
+		vertexShader: vertexShader,
+		fragmentShader: fragmentShader,
+	});
+
+	const backgroundPlane = new THREE.Mesh(planeGeometry, material);
+	backgroundPlane.rotation.x = -Math.PI / 2;
+	backgroundPlane.scale.set(1.5, 1.5, 1.5);
+	scene.add(backgroundPlane);
 };
 
 // Get Aspect Window ratio
@@ -648,70 +577,21 @@ window.addEventListener('resize', () => {
 // Instantiating Camera and camera position
 //4 Args for PerspectiveCamera: (fov, Aspect Ratio, near, far) — for camera frustum (the region of space in the modeled world that may appear on the screen)
 const camera = new THREE.PerspectiveCamera(
-	75,
+	5,
 	windowSize.width / windowSize.height,
 	0.1,
 	100
 );
+
 camera.position.x = 0;
-camera.position.y = 0;
-camera.position.z = 0.897;
+camera.position.y = 5;
+camera.position.z = 2;
+
 scene.add(camera);
 
 // Camera controls
 const controls = new OrbitControls(camera, canvas);
 controls.enableDamping = true;
-
-// Tweaking parameters in GUI
-const particleParameters = gui.addFolder('Particle Parameters');
-particleParameters.close();
-particleParameters
-	.add(parameters, 'count')
-	.min(100)
-	.max(1000000)
-	.step(100)
-	.onFinishChange(generateParticleFormation);
-particleParameters
-	.add(parameters, 'radius')
-	.min(0.01)
-	.max(22)
-	.step(0.01)
-	.onFinishChange(generateParticleFormation);
-particleParameters
-	.add(parameters, 'curve')
-	.min(-5)
-	.max(5)
-	.step(0.001)
-	.onFinishChange(generateParticleFormation);
-particleParameters
-	.add(parameters, 'forks')
-	.min(1)
-	.max(20)
-	.step(1.0)
-	.onFinishChange(generateParticleFormation);
-particleParameters
-	.add(parameters, 'randomness')
-	.min(0)
-	.max(10)
-	.step(0.001)
-	.onFinishChange(generateParticleFormation);
-particleParameters
-	.add(parameters, 'randomPower')
-	.min(1)
-	.max(10)
-	.step(0.001)
-	.onFinishChange(generateParticleFormation);
-particleParameters
-	.addColor(parameters, 'innerColor')
-	.onFinishChange(generateParticleFormation);
-particleParameters
-	.addColor(parameters, 'outerColor')
-	.onFinishChange(generateParticleFormation);
-const cameraFolder = gui.addFolder('Camera');
-cameraFolder.add(camera.position, 'x').min(0).max(15).step(0.001);
-cameraFolder.add(camera.position, 'y').min(0).max(15).step(0.001);
-cameraFolder.add(camera.position, 'z').min(0.01).max(15).step(0.001);
-cameraFolder.close();
 
 // Renderer (WebGl)
 const renderer = new THREE.WebGLRenderer({
@@ -721,7 +601,14 @@ renderer.setSize(windowSize.width, windowSize.height);
 renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
 
 // Our main function
-generateParticleFormation();
+generateBackgroundPlane();
+
+const ambientLight = new THREE.AmbientLight(0xffffff, 0.5);
+scene.add(ambientLight);
+
+const directionalLight = new THREE.DirectionalLight(0x00fffc, 0.3);
+directionalLight.position.set(1, 0.25, 0);
+scene.add(directionalLight);
 
 // Object for keeping track of time to use in frame updates
 const clock = new THREE.Clock();
@@ -730,15 +617,12 @@ const frame = () => {
 	const elapsedTime = clock.getElapsedTime();
 
 	// Update material
-	material.uniforms.uTime.value = elapsedTime * 0.2; // slow it down a bit...
+	material.uniforms.u_time.value = elapsedTime;
 
 	// Update controls
 	controls.update();
 
-	// Render
 	renderer.render(scene, camera);
-
-	// Call fram() again for the next frame
 	window.requestAnimationFrame(frame);
 };
 frame();
